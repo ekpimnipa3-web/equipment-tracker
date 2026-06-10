@@ -463,6 +463,7 @@ function openAddModal() {
   document.getElementById('modal-title').textContent = 'เพิ่มรายการเครื่องมือ'
   ;['f-control','f-name','f-model','f-dept','f-assigned','f-notes'].forEach(id=>document.getElementById(id).value='')
   ;['f-received','f-due'].forEach(id=>document.getElementById(id).value='')
+  document.getElementById('f-priority').value = 'ปกติ'
   document.getElementById('add-modal').classList.add('open')
 }
 
@@ -483,39 +484,64 @@ function openEdit(id) {
 }
 
 async function saveEquipment() {
-  const data = {
-    control_number: document.getElementById('f-control').value.trim(),
-    device_name: document.getElementById('f-name').value.trim(),
-    model: document.getElementById('f-model').value.trim(),
-    department: document.getElementById('f-dept').value.trim(),
-    priority: document.getElementById('f-priority').value,
-    assigned_to: document.getElementById('f-assigned').value.trim(),
-    received_date: document.getElementById('f-received').value,
-    due_date: document.getElementById('f-due').value,
-    notes: document.getElementById('f-notes').value.trim(),
-  }
-  if (!data.control_number||!data.device_name||!data.department) {
-    alert('กรุณากรอกข้อมูลที่จำเป็น (Control No., ชื่อเครื่อง, หน่วยงาน)')
+  const control = document.getElementById('f-control').value.trim()
+  const name = document.getElementById('f-name').value.trim()
+  const dept = document.getElementById('f-dept').value.trim()
+
+  if (!control || !name || !dept) {
+    alert('กรุณากรอกข้อมูลที่จำเป็น: Control No., ชื่อเครื่องมือ, หน่วยงาน')
     return
   }
 
-  if (!SUPABASE_URL.includes('YOUR_PROJECT')) {
+  // เช็ค control_number ซ้ำ (กรณีเพิ่มใหม่)
+  if (!editingId) {
+    const dup = allEquipment.find(e => e.control_number.toLowerCase() === control.toLowerCase())
+    if (dup) {
+      alert(`Control Number "${control}" มีในระบบแล้ว กรุณาใช้หมายเลขอื่น`)
+      return
+    }
+  }
+
+  const data = {
+    control_number: control,
+    device_name: name,
+    model: document.getElementById('f-model').value.trim(),
+    department: dept,
+    priority: document.getElementById('f-priority').value,
+    assigned_to: document.getElementById('f-assigned').value.trim(),
+    received_date: document.getElementById('f-received').value || null,
+    due_date: document.getElementById('f-due').value || null,
+    notes: document.getElementById('f-notes').value.trim(),
+  }
+
+  if (!SUPABASE_URL.includes('equipment-tracker')) {
+    // มี Supabase จริง
     if (editingId) {
-      await db.from('equipment').update(data).eq('id', editingId)
+      const { error } = await db.from('equipment').update(data).eq('id', editingId)
+      if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return }
     } else {
-      data.status = 'รับเครื่อง'
-      await db.from('equipment').insert(data)
+      const { error } = await db.from('equipment').insert({ ...data, status: 'รับเครื่อง' })
+      if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return }
     }
     await loadEquipment()
   } else {
+    // Demo mode (ยังไม่ได้ตั้งค่า Supabase)
     if (editingId) {
-      const idx = allEquipment.findIndex(e=>e.id===editingId)
-      if (idx>=0) allEquipment[idx] = { ...allEquipment[idx], ...data }
+      const idx = allEquipment.findIndex(e => e.id === editingId)
+      if (idx >= 0) allEquipment[idx] = { ...allEquipment[idx], ...data }
     } else {
-      allEquipment.unshift({ id: Date.now().toString(), status:'รับเครื่อง', ...data })
+      const newItem = {
+        id: 'demo-' + Date.now(),
+        status: 'รับเครื่อง',
+        completed_at: null,
+        ...data
+      }
+      allEquipment.unshift(newItem)
     }
-    updateStats(); renderTable()
+    updateStats()
+    renderTable()
   }
+  editingId = null
   closeModal('add-modal')
 }
 
