@@ -514,35 +514,50 @@ async function saveEquipment() {
     notes: document.getElementById('f-notes').value.trim(),
   }
 
-  if (!SUPABASE_URL.includes('equipment-tracker')) {
-    // มี Supabase จริง
+ async function saveEquipment() {
+  const control = document.getElementById('f-control').value.trim()
+  const name = document.getElementById('f-name').value.trim()
+  const dept = document.getElementById('f-dept').value.trim()
+
+  if (!control || !name || !dept) {
+    alert('กรุณากรอกข้อมูลที่จำเป็น: Control No., ชื่อเครื่องมือ, หน่วยงาน')
+    return
+  }
+
+  if (!editingId) {
+    const dup = allEquipment.find(e => e.control_number.toLowerCase() === control.toLowerCase())
+    if (dup) {
+      alert(`Control Number "${control}" มีในระบบแล้ว`)
+      return
+    }
+  }
+
+  const data = {
+    control_number: control,
+    device_name: name,
+    model: document.getElementById('f-model').value.trim(),
+    department: dept,
+    priority: document.getElementById('f-priority').value,
+    assigned_to: document.getElementById('f-assigned').value.trim(),
+    received_date: document.getElementById('f-received').value || null,
+    due_date: document.getElementById('f-due').value || null,
+    notes: document.getElementById('f-notes').value.trim(),
+  }
+
+  try {
     if (editingId) {
       const { error } = await db.from('equipment').update(data).eq('id', editingId)
-      if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return }
+      if (error) throw error
     } else {
       const { error } = await db.from('equipment').insert({ ...data, status: 'รับเครื่อง' })
-      if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return }
+      if (error) throw error
     }
     await loadEquipment()
-  } else {
-    // Demo mode (ยังไม่ได้ตั้งค่า Supabase)
-    if (editingId) {
-      const idx = allEquipment.findIndex(e => e.id === editingId)
-      if (idx >= 0) allEquipment[idx] = { ...allEquipment[idx], ...data }
-    } else {
-      const newItem = {
-        id: 'demo-' + Date.now(),
-        status: 'รับเครื่อง',
-        completed_at: null,
-        ...data
-      }
-      allEquipment.unshift(newItem)
-    }
-    updateStats()
-    renderTable()
+    editingId = null
+    closeModal('add-modal')
+  } catch (err) {
+    alert('เกิดข้อผิดพลาด: ' + (err.message || JSON.stringify(err)))
   }
-  editingId = null
-  closeModal('add-modal')
 }
 
 // ===== LOG =====
