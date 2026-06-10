@@ -130,7 +130,7 @@
     <p id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></p>
     <button class="btn btn-primary" onclick="login()">เข้าสู่ระบบ</button>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">
-      ทดสอบ: tech/1234 (ช่าง) | nurse/1234 (พยาบาล)
+      ทดสอบ: tech/1234 (ช่าง)
     </p>
   </div>
 </div>
@@ -297,7 +297,6 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 // Demo users (ในระบบจริงดึงจาก DB + hash password)
 const DEMO_USERS = {
   'tech': { password: '1234', role: 'technician', name: 'นายสมชาย กิจดี', dept: null },
-  'nurse': { password: '1234', role: 'nurse', name: 'นางสาวมาลี ดีใจ', dept: 'ICU ชั้น 5' }
 }
 
 let currentUser = null
