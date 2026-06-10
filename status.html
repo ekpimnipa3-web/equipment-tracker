@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ติดตามสถานะเครื่องมือแพทย์</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --blue: #378ADD; --amber: #EF9F27; --green: #639922;
+    --red: #E24B4A; --purple: #7F77DD; --teal: #1D9E75;
+    --bg: #f5f5f3; --card: #ffffff; --border: #e0dfd8;
+    --text: #1a1a18; --muted: #888780; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+  body { background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--card); border-bottom: 0.5px solid var(--border);
+    padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar h1 { font-size: 15px; font-weight: 500; }
+  .topbar-sub { font-size: 12px; color: var(--muted); }
+  .refresh-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    border: 0.5px solid var(--border); background: var(--card); color: var(--text);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .refresh-btn:hover { background: var(--bg); }
+
+  /* CONTENT */
+  .content { padding: 16px 20px; max-width: 900px; margin: 0 auto; }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .search-box {
+    flex: 1; min-width: 180px; padding: 8px 12px;
+    border: 0.5px solid var(--border); border-radius: 8px;
+    background: var(--card); color: var(--text); font-size: 13px;
+  }
+  .filter-select {
+    padding: 8px 12px; border-radius: 8px; font-size: 13px;
+    border: 0.5px solid var(--border); background: var(--card); color: var(--text); cursor: pointer;
+  }
+
+  /* STATS BAR */
+  .stats { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    border: 0.5px solid var(--border); background: var(--card); cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .stat-chip.active { border-width: 1.5px; }
+  .stat-chip .num { font-size: 14px; font-weight: 500; }
+  .chip-all.active    { border-color: var(--text);   color: var(--text); }
+  .chip-receive.active { border-color: var(--blue);  color: var(--blue); }
+  .chip-maint.active   { border-color: var(--amber); color: var(--amber); }
+  .chip-calib.active   { border-color: var(--purple);color: var(--purple); }
+  .chip-wait.active    { border-color: var(--teal);  color: var(--teal); }
+  .chip-done.active    { border-color: var(--green); color: var(--green); }
+
+  /* CARD */
+  .eq-card {
+    background: var(--card); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+    transition: box-shadow 0.15s;
+  }
+  .eq-card:hover { border-color: #c0bfb8; }
+  .eq-card.done-fade { opacity: 0.5; }
+  .card-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 10px; gap: 8px;
+  }
+  .device-name { font-weight: 500; font-size: 14px; }
+  .device-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: monospace; }
+
+  /* BADGE */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+    white-space: nowrap;
+  }
+  .s-รับเครื่อง           { background: #E6F1FB; color: #185FA5; }
+  .s-ดำเนินการบำรุงรักษา  { background: #FAEEDA; color: #854F0B; }
+  .s-ดำเนินการสอบเทียบ    { background: #EEEDFE; color: #3C3489; }
+  .s-รอรับคืน             { background: #E1F5EE; color: #0F6E56; }
+  .s-เสร็จสิ้น            { background: #EAF3DE; color: #3B6D11; }
+
+  /* PROGRESS */
+  .progress-steps { display: flex; align-items: center; margin: 8px 0 10px; }
+  .step-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .step-circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 500; border: 2px solid var(--border);
+  }
+  .step-circle.done   { background: var(--blue);  color: white; border-color: var(--blue); }
+  .step-circle.active { background: var(--amber); color: white; border-color: var(--amber); }
+  .step-circle.pending{ background: var(--bg);    color: var(--muted); }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin-bottom: 14px; }
+  .step-line.done { background: var(--blue); }
+  .step-name { font-size: 9px; color: var(--muted); text-align: center; margin-top: 3px; max-width: 52px; line-height: 1.3; }
+
+  /* NOTIF */
+  .notif {
+    padding: 8px 12px; border-radius: 8px; font-size: 12px;
+    margin-bottom: 6px; border-left: 3px solid;
+  }
+  .notif-warn { background: #FAEEDA; border-color: var(--amber); color: #854F0B; }
+  .notif-info { background: #E6F1FB; border-color: var(--blue);  color: #185FA5; }
+  .notif-done { background: #EAF3DE; border-color: var(--green); color: #3B6D11; }
+  .notif-over { background: #FCEBEB; border-color: var(--red);   color: #A32D2D; }
+
+  /* CARD FOOTER */
+  .card-footer {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px; font-size: 11px; color: var(--muted); margin-top: 8px;
+    padding-top: 8px; border-top: 0.5px solid var(--border);
+  }
+  .card-footer span { color: var(--text); }
+
+  /* LOADING / EMPTY */
+  .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+  .empty   { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* LAST UPDATE */
+  .last-update { font-size: 11px; color: var(--muted); text-align: right; margin-bottom: 10px; }
+
+  @media (max-width: 600px) {
+    .content { padding: 12px; }
+    .card-footer { grid-template-columns: 1fr 1fr; }
+    .topbar h1 { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span style="font-size:20px">🔧</span>
+    <div>
+      <h1>ติดตามสถานะเครื่องมือแพทย์</h1>
+      <div class="topbar-sub" id="dept-label">กำลังโหลด...</div>
+    </div>
+  </div>
+  <button class="refresh-btn" onclick="loadAndRender()">
+    <span id="refresh-icon">↻</span> รีเฟรช
+  </button>
+</div>
+
+<div class="content">
+
+  <!-- Stats chips -->
+  <div class="stats" id="stats-bar">
+    <div class="stat-chip chip-all active" onclick="filterChip('')">
+      <span>ทั้งหมด</span><span class="num" id="cnt-all">0</span>
+    </div>
+    <div class="stat-chip chip-receive" onclick="filterChip('รับเครื่อง')">
+      <span>รับเครื่อง</span><span class="num" id="cnt-receive" style="color:var(--blue)">0</span>
+    </div>
+    <div class="stat-chip chip-maint" onclick="filterChip('ดำเนินการบำรุงรักษา')">
+      <span>บำรุงรักษา</span><span class="num" id="cnt-maint" style="color:var(--amber)">0</span>
+    </div>
+    <div class="stat-chip chip-calib" onclick="filterChip('ดำเนินการสอบเทียบ')">
+      <span>สอบเทียบ</span><span class="num" id="cnt-calib" style="color:var(--purple)">0</span>
+    </div>
+    <div class="stat-chip chip-wait" onclick="filterChip('รอรับคืน')">
+      <span>รอรับคืน</span><span class="num" id="cnt-wait" style="color:var(--teal)">0</span>
+    </div>
+    <div class="stat-chip chip-done" onclick="filterChip('เสร็จสิ้น')">
+      <span>เสร็จสิ้น</span><span class="num" id="cnt-done" style="color:var(--green)">0</span>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <input class="search-box" id="search-input"
+      placeholder="ค้นหา Control No., ชื่อเครื่อง..."
+      oninput="renderCards()" />
+    <select class="filter-select" id="dept-filter" onchange="renderCards()">
+      <option value="">ทุกหน่วยงาน</option>
+    </select>
+  </div>
+
+  <div class="last-update" id="last-update"></div>
+
+  <!-- Cards -->
+  <div id="card-list">
+    <div class="loading">กำลังโหลดข้อมูล...</div>
+  </div>
+
+</div>
+
+<script>
+// ======================================================
+// CONFIG — ใส่ค่าเดียวกับ index.html
+// ======================================================
+const SUPABASE_URL = 'https://kvuaorlyewmfwlydcazv.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dWFvcmx5ZXdtZndseWRjYXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNzEyNjEsImV4cCI6MjA5NjY0NzI2MX0.AsAQsfiqgxcAR5YSgHEtStLK2Uh587rhrRUozIyDHjg'
+// ======================================================
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+const STATUSES   = ['รับเครื่อง','ดำเนินการบำรุงรักษา','ดำเนินการสอบเทียบ','รอรับคืน','เสร็จสิ้น']
+const STATUS_SHORT = ['รับเครื่อง','บำรุงรักษา','สอบเทียบ','รอรับคืน','เสร็จสิ้น']
+
+let allData = []
+let activeFilter = ''
+
+// ---- ดึง dept จาก URL parameter ถ้ามี ----
+// เช่น status.html?dept=ICU%20ชั้น%205
+const urlParams = new URLSearchParams(window.location.search)
+const deptParam = urlParams.get('dept') ? decodeURIComponent(urlParams.get('dept')) : ''
+
+// ---- โหลดข้อมูล ----
+async function loadAndRender() {
+  document.getElementById('refresh-icon').style.transform = 'rotate(360deg)'
+  const { data, error } = await db
+    .from('equipment')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    document.getElementById('card-list').innerHTML =
+      `<div class="empty">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}</div>`
+    return
+  }
+
+  allData = data || []
+  document.getElementById('last-update').textContent =
+    'อัปเดตล่าสุด: ' + new Date().toLocaleString('th-TH')
+  document.getElementById('refresh-icon').style.transform = ''
+
+  // ถ้า URL มี dept ให้ filter เฉพาะหน่วยงานนั้นและซ่อน dropdown
+  if (deptParam) {
+    document.getElementById('dept-label').textContent = 'หน่วยงาน: ' + deptParam
+    document.getElementById('dept-filter').style.display = 'none'
+  } else {
+    document.getElementById('dept-label').textContent = 'ทุกหน่วยงาน'
+    buildDeptFilter()
+  }
+
+  updateStats()
+  renderCards()
+}
+
+// ---- สร้าง dropdown หน่วยงาน ----
+function buildDeptFilter() {
+  const depts = [...new Set(allData.map(e => e.department).filter(Boolean))].sort()
+  const sel = document.getElementById('dept-filter')
+  sel.innerHTML = '<option value="">ทุกหน่วยงาน</option>' +
+    depts.map(d => `<option value="${d}"${d===deptParam?'selected':''}>${d}</option>`).join('')
+}
+
+// ---- Stats ----
+function updateStats() {
+  const src = deptParam ? allData.filter(e => e.department === deptParam) : allData
+  const cnt = { 'รับเครื่อง':0,'ดำเนินการบำรุงรักษา':0,'ดำเนินการสอบเทียบ':0,'รอรับคืน':0,'เสร็จสิ้น':0 }
+  src.forEach(e => { if (cnt[e.status] !== undefined) cnt[e.status]++ })
+  document.getElementById('cnt-all').textContent     = src.length
+  document.getElementById('cnt-receive').textContent = cnt['รับเครื่อง']
+  document.getElementById('cnt-maint').textContent   = cnt['ดำเนินการบำรุงรักษา']
+  document.getElementById('cnt-calib').textContent   = cnt['ดำเนินการสอบเทียบ']
+  document.getElementById('cnt-wait').textContent    = cnt['รอรับคืน']
+  document.getElementById('cnt-done').textContent    = cnt['เสร็จสิ้น']
+}
+
+// ---- Filter chip ----
+function filterChip(status) {
+  activeFilter = status
+  document.querySelectorAll('.stat-chip').forEach(c => c.classList.remove('active'))
+  const map = {
+    '':'chip-all','รับเครื่อง':'chip-receive',
+    'ดำเนินการบำรุงรักษา':'chip-maint','ดำเนินการสอบเทียบ':'chip-calib',
+    'รอรับคืน':'chip-wait','เสร็จสิ้น':'chip-done'
+  }
+  document.querySelector('.' + (map[status] || 'chip-all')).classList.add('active')
+  renderCards()
+}
+
+// ---- Render cards ----
+function renderCards() {
+  const q    = document.getElementById('search-input').value.toLowerCase()
+  const dept = deptParam || document.getElementById('dept-filter').value
+
+  let rows = allData.filter(e => {
+    const matchDept   = !dept || e.department === dept
+    const matchStatus = !activeFilter || e.status === activeFilter
+    const matchQ      = !q ||
+      e.control_number.toLowerCase().includes(q) ||
+      e.device_name.toLowerCase().includes(q) ||
+      (e.department||'').toLowerCase().includes(q)
+    return matchDept && matchStatus && matchQ
+  })
+
+  if (!rows.length) {
+    document.getElementById('card-list').innerHTML =
+      '<div class="empty">ไม่พบรายการที่ตรงกับเงื่อนไข</div>'
+    return
+  }
+
+  document.getElementById('card-list').innerHTML = rows.map(e => buildCard(e)).join('')
+}
+
+// ---- Build card HTML ----
+function buildCard(e) {
+  const now = Date.now()
+  const isDoneFade = e.status === 'เสร็จสิ้น' && e.completed_at &&
+    (now - new Date(e.completed_at).getTime()) > 24*60*60*1000
+  const isOverdue = e.due_date && new Date(e.due_date) < new Date() && e.status !== 'เสร็จสิ้น'
+  const curIdx = STATUSES.indexOf(e.status)
+
+  // Progress steps
+  const stepsHtml = STATUSES.map((s, i) => {
+    const cls  = i < curIdx ? 'done' : i === curIdx ? 'active' : 'pending'
+    const line = i < STATUSES.length - 1
+      ? `<div class="step-line ${i < curIdx ? 'done' : ''}"></div>` : ''
+    return `<div class="step-item">
+      <div class="step-circle ${cls}">${i < curIdx ? '✓' : i + 1}</div>
+      <div class="step-name">${STATUS_SHORT[i]}</div>
+    </div>${line}`
+  }).join('')
+
+  // Notification
+  let notif = ''
+  if (isDoneFade)
+    notif = `<div class="notif notif-done">✅ เสร็จสิ้น (เกิน 24 ชม.) พร้อมรับคืน</div>`
+  else if (e.status === 'เสร็จสิ้น')
+    notif = `<div class="notif notif-done">✅ เสร็จสิ้นแล้ว พร้อมรับคืน</div>`
+  else if (e.status === 'รอรับคืน')
+    notif = `<div class="notif notif-info">📦 พร้อมรับคืนแล้ว กรุณาติดต่อฝ่ายช่าง</div>`
+  else if (isOverdue)
+    notif = `<div class="notif notif-over">⚠️ เกินกำหนดแล้วเสร็จ กรุณาติดต่อฝ่ายช่าง</div>`
+  else
+    notif = `<div class="notif notif-info">🔧 อยู่ระหว่างดำเนินการ${e.due_date ? ' · กำหนดแล้วเสร็จ: ' + e.due_date : ''}</div>`
+
+  return `
+  <div class="eq-card ${isDoneFade ? 'done-fade' : ''}">
+    <div class="card-top">
+      <div>
+        <div class="device-name">${e.device_name}${e.model ? ' <span style="font-weight:400;color:var(--muted)">— ' + e.model + '</span>' : ''}</div>
+        <div class="device-meta">${e.control_number} · ${e.department}</div>
+      </div>
+      <span class="badge s-${e.status}" style="opacity:${isDoneFade?0.5:1}">${e.status}</span>
+    </div>
+    <div class="progress-steps">${stepsHtml}</div>
+    ${notif}
+    <div class="card-footer">
+      <div>ผู้รับผิดชอบ<br><span>${e.assigned_to || '-'}</span></div>
+      <div>วันที่รับ<br><span>${e.received_date || '-'}</span></div>
+      <div>กำหนดแล้วเสร็จ<br>
+        <span style="color:${isOverdue ? 'var(--red)' : 'var(--text)'}">
+          ${e.due_date || '-'}
+        </span>
+      </div>
+    </div>
+  </div>`
+}
+
+// ---- Auto-refresh ทุก 2 นาที ----
+loadAndRender()
+setInterval(loadAndRender, 2 * 60 * 1000)
+</script>
+</body>
+</html>
