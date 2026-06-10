@@ -198,23 +198,6 @@
     </div>
   </div>
 
-  <!-- พยาบาล View -->
-  <div id="nurse-view" style="display:none">
-    <div class="content" style="max-width:700px">
-      <div style="margin-bottom:16px">
-        <p style="font-size:13px;color:var(--muted);margin-bottom:8px">ค้นหาด้วย Control Number หรือดูรายการของหน่วยงานคุณด้านล่าง</p>
-        <div style="display:flex;gap:8px">
-          <input class="search" id="nurse-search" placeholder="CTL-2024-..." style="max-width:280px" />
-          <button class="btn btn-primary" onclick="nurseSearch()">ค้นหา</button>
-        </div>
-      </div>
-
-      <div id="nurse-result"></div>
-      <div id="nurse-dept-list"></div>
-    </div>
-  </div>
-</div>
-
 <!-- Modal: เพิ่ม/แก้ไข -->
 <div class="modal-overlay" id="add-modal">
   <div class="modal">
@@ -328,18 +311,16 @@ async function login() {
   if (user.role === 'technician') {
     document.getElementById('tech-view').style.display = 'block'
   } else {
-    document.getElementById('nurse-view').style.display = 'block'
-    renderNurseDept()
+    // nurse ไม่มีสิทธิ์เข้าหน้านี้ ให้ไปหน้า status แทน
+    window.location.href = 'status.html'
   }
-}
-
+  
 function logout() {
   currentUser = null
   allEquipment = []
   document.getElementById('login-page').style.display = 'flex'
   document.getElementById('main-page').style.display = 'none'
   document.getElementById('tech-view').style.display = 'none'
-  document.getElementById('nurse-view').style.display = 'none'
   document.getElementById('username').value = ''
   document.getElementById('password').value = ''
 }
@@ -588,71 +569,6 @@ async function viewLog(id) {
 
   document.getElementById('log-content').innerHTML = html
   document.getElementById('log-modal').classList.add('open')
-}
-
-// ===== NURSE VIEW =====
-function renderNurseDept() {
-  const dept = currentUser.dept
-  const items = dept ? allEquipment.filter(e=>e.department===dept) : allEquipment
-  const html = items.length
-    ? items.map(e=>nurseCard(e)).join('')
-    : '<p style="color:var(--muted);font-size:13px">ไม่พบรายการของหน่วยงานคุณ</p>'
-  document.getElementById('nurse-dept-list').innerHTML =
-    `<p style="font-size:13px;font-weight:500;color:var(--muted);margin-bottom:10px">รายการของ${dept||'ทุกหน่วยงาน'}</p>${html}`
-}
-
-function nurseSearch() {
-  const q = document.getElementById('nurse-search').value.trim().toLowerCase()
-  const eq = allEquipment.find(e=>e.control_number.toLowerCase().includes(q)||e.device_name.toLowerCase().includes(q))
-  document.getElementById('nurse-result').innerHTML = eq
-    ? nurseCard(eq)
-    : q ? '<div class="notif notif-warn">ไม่พบรายการที่ค้นหา</div>' : ''
-}
-
-function nurseCard(e) {
-  const steps = STATUSES
-  const curIdx = steps.indexOf(e.status)
-  const stepsHtml = steps.map((s,i)=> {
-    const cls = i < curIdx ? 'done' : i===curIdx ? 'active' : 'pending'
-    const line = i < steps.length-1
-      ? `<div style="flex:1;height:2px;background:${i<curIdx?'var(--blue)':'var(--border)'};margin-top:0;align-self:center;margin-bottom:14px"></div>`
-      : ''
-    return `<div class="step-item">
-      <div class="step-circle ${cls}">${i<curIdx?'✓':i+1}</div>
-      <div class="step-name">${STATUS_SHORT[i]}</div>
-    </div>${line}`
-  }).join('')
-
-  const now = Date.now()
-  const isDoneFade = e.status==='เสร็จสิ้น' && e.completed_at &&
-    (now-new Date(e.completed_at).getTime())>24*60*60*1000
-  const isOverdue = e.due_date && new Date(e.due_date)<new Date() && e.status!=='เสร็จสิ้น'
-
-  const notif = isDoneFade
-    ? `<div class="notif notif-done">✅ เสร็จสิ้น (เกิน 24 ชม.) พร้อมรับคืน</div>`
-    : e.status==='เสร็จสิ้น'
-    ? `<div class="notif notif-done">✅ เสร็จสิ้น พร้อมรับคืน</div>`
-    : e.status==='รอรับคืน'
-    ? `<div class="notif notif-info">📦 พร้อมรับคืนแล้ว กรุณาติดต่อฝ่ายช่าง</div>`
-    : isOverdue
-    ? `<div class="notif notif-over">⚠️ เกินกำหนดแล้วเสร็จ กรุณาติดต่อฝ่ายช่าง</div>`
-    : `<div class="notif notif-info">🔧 อยู่ระหว่างดำเนินการ กำหนดแล้วเสร็จ: ${e.due_date||'-'}</div>`
-
-  return `<div style="background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-      <div>
-        <div style="font-weight:500;font-size:14px">${e.device_name}</div>
-        <div style="font-size:11px;font-family:monospace;color:var(--muted)">${e.control_number}${e.model?` · ${e.model}`:''}</div>
-      </div>
-      <span class="badge ${STATUS_BADGE[e.status]||''}" style="opacity:${isDoneFade?0.5:1}">${e.status}</span>
-    </div>
-    <div class="progress-steps">${stepsHtml}</div>
-    ${notif}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-top:8px;color:var(--muted)">
-      <div>ผู้รับผิดชอบ: <span style="color:var(--text)">${e.assigned_to||'-'}</span></div>
-      <div>วันที่รับ: <span style="color:var(--text)">${e.received_date||'-'}</span></div>
-    </div>
-  </div>`
 }
 
 // ===== EXPORT =====
