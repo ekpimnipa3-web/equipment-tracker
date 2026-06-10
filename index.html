@@ -474,10 +474,14 @@ function openEdit(id) {
     return
   }
 
-  if (!editingId) {
-    const dup = allEquipment.find(e => e.control_number.toLowerCase() === control.toLowerCase())
+if (!editingId) {
+    // แก้ไขให้ค้นหาเฉพาะเครื่องที่เลขซ้ำกัน และสถานะ "ยังไม่เสร็จสิ้น" เท่านั้น
+    const dup = allEquipment.find(e => 
+      e.control_number.toLowerCase() === control.toLowerCase() && 
+      e.status !== 'เสร็จสิ้น'
+    )
     if (dup) {
-      alert(`Control Number "${control}" มีในระบบแล้ว`)
+      alert(`Control Number "${control}" กำลังอยู่ในระบบ (สถานะ: ${dup.status}) ยังไม่สามารถใช้ซ้ำได้`);
       return
     }
   }
