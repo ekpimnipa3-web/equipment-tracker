@@ -314,6 +314,7 @@ async function login() {
     // nurse ไม่มีสิทธิ์เข้าหน้านี้ ให้ไปหน้า status แทน
     window.location.href = 'status.html'
   }
+}
   
 function logout() {
   currentUser = null
@@ -462,37 +463,6 @@ function openEdit(id) {
   document.getElementById('f-notes').value = e.notes||''
   document.getElementById('add-modal').classList.add('open')
 }
-
-async function saveEquipment() {
-  const control = document.getElementById('f-control').value.trim()
-  const name = document.getElementById('f-name').value.trim()
-  const dept = document.getElementById('f-dept').value.trim()
-
-  if (!control || !name || !dept) {
-    alert('กรุณากรอกข้อมูลที่จำเป็น: Control No., ชื่อเครื่องมือ, หน่วยงาน')
-    return
-  }
-
-  // เช็ค control_number ซ้ำ (กรณีเพิ่มใหม่)
-  if (!editingId) {
-    const dup = allEquipment.find(e => e.control_number.toLowerCase() === control.toLowerCase())
-    if (dup) {
-      alert(`Control Number "${control}" มีในระบบแล้ว กรุณาใช้หมายเลขอื่น`)
-      return
-    }
-  }
-
-  const data = {
-    control_number: control,
-    device_name: name,
-    model: document.getElementById('f-model').value.trim(),
-    department: dept,
-    priority: document.getElementById('f-priority').value,
-    assigned_to: document.getElementById('f-assigned').value.trim(),
-    received_date: document.getElementById('f-received').value || null,
-    due_date: document.getElementById('f-due').value || null,
-    notes: document.getElementById('f-notes').value.trim(),
-  }
 
  async function saveEquipment() {
   const control = document.getElementById('f-control').value.trim()
