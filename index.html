@@ -376,14 +376,18 @@ function renderTable() {
   const q = document.getElementById('search-input').value.toLowerCase()
   const fs = document.getElementById('filter-status').value
 
+const now = Date.now()
   let rows = allEquipment.filter(e => {
+    const isExpired = e.status === 'เสร็จสิ้น' && e.completed_at &&
+      (now - new Date(e.completed_at).getTime()) > 24*60*60*1000
+    if (isExpired) return false
+
     const match = !q || e.control_number.toLowerCase().includes(q) ||
       e.device_name.toLowerCase().includes(q) || e.department.toLowerCase().includes(q)
     const statusMatch = !fs || e.status === fs
     return match && statusMatch
   })
-
-  const now = Date.now()
+  
   const tbody = document.getElementById('equipment-tbody')
   tbody.innerHTML = rows.map(e => {
     const isDoneFade = e.status === 'เสร็จสิ้น' && e.completed_at &&
