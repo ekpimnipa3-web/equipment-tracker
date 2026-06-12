@@ -289,7 +289,12 @@ function renderCards() {
   const q    = document.getElementById('search-input').value.toLowerCase()
   const dept = deptParam || document.getElementById('dept-filter').value
 
+  const now = Date.now()
   let rows = allData.filter(e => {
+    const isExpired = e.status === 'เสร็จสิ้น' && e.completed_at &&
+      (now - new Date(e.completed_at).getTime()) > 24*60*60*1000
+    if (isExpired) return false
+
     const matchDept   = !dept || e.department === dept
     const matchStatus = !activeFilter || e.status === activeFilter
     const matchQ      = !q ||
