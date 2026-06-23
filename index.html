@@ -6,105 +6,57 @@
 <title>ระบบติดตามเครื่องมือแพทย์</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  /* === CONFIG สี === */
   :root {
     --blue: #378ADD; --amber: #EF9F27; --green: #639922;
     --red: #E24B4A; --purple: #7F77DD; --teal: #1D9E75;
     --bg: #f5f5f3; --card: #ffffff; --border: #e0dfd8;
-    --text: #1a1a18; --muted: #888780;
-    --radius: 10px;
+    --text: #1a1a18; --muted: #888780; --radius: 10px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
   body { background: var(--bg); color: var(--text); font-size: 14px; }
 
-  /* === LOGIN === */
-  #login-page { display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; background: var(--bg); }
-  .login-card { background: var(--card); border: 0.5px solid var(--border);
-    border-radius: var(--radius); padding: 32px; width: 360px; }
+  #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+  .login-card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 32px; width: 360px; }
   .login-card h2 { font-size: 18px; font-weight: 500; margin-bottom: 24px; text-align: center; }
   .form-group { margin-bottom: 14px; }
   .form-group label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
-  .form-group input, .form-group select {
-    width: 100%; padding: 8px 12px; border: 0.5px solid var(--border);
-    border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);
-  }
-  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;
-    border: 0.5px solid var(--border); background: var(--card); color: var(--text); }
+  .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 0.5px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text); }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 0.5px solid var(--border); background: var(--card); color: var(--text); }
   .btn-primary { background: var(--blue); color: white; border-color: var(--blue); width: 100%; padding: 10px; }
   .btn-primary:hover { opacity: 0.9; }
 
-  /* === LAYOUT === */
   #main-page { display: none; }
-  .topbar { background: var(--card); border-bottom: 0.5px solid var(--border);
-    padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar { background: var(--card); border-bottom: 0.5px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
   .topbar h1 { font-size: 15px; font-weight: 500; }
   .content { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-  /* === STATS === */
   .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
-  .stat { background: var(--card); border: 0.5px solid var(--border);
-    border-radius: var(--radius); padding: 14px; text-align: center; }
+  .stat { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
   .stat-num { font-size: 24px; font-weight: 500; }
   .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-  /* === TABLE === */
   .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-  .search { flex: 1; min-width: 200px; padding: 8px 12px;
-    border: 0.5px solid var(--border); border-radius: 8px;
-    background: var(--card); color: var(--text); }
-  .table-card { background: var(--card); border: 0.5px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; }
+  .search { flex: 1; min-width: 200px; padding: 8px 12px; border: 0.5px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); }
+  .table-card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: var(--bg); padding: 9px 12px; text-align: left;
-    font-weight: 500; font-size: 12px; color: var(--muted);
-    border-bottom: 0.5px solid var(--border); }
+  th { background: var(--bg); padding: 9px 12px; text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); border-bottom: 0.5px solid var(--border); }
   td { padding: 9px 12px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr.done-fade { opacity: 0.5; }
 
-  /* === BADGE === */
-  .badge { display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
   .s-รับเครื่อง { background: #E6F1FB; color: #185FA5; }
   .s-บำรุงรักษา { background: #FAEEDA; color: #854F0B; }
   .s-สอบเทียบ { background: #EEEDFE; color: #3C3489; }
   .s-รอรับคืน { background: #E1F5EE; color: #0F6E56; }
   .s-เสร็จสิ้น { background: #EAF3DE; color: #3B6D11; }
 
-  /* === MODAL === */
-  .modal-overlay { display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4); z-index: 100;
-    align-items: center; justify-content: center; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal { background: var(--card); border-radius: var(--radius);
-    padding: 24px; width: 500px; max-height: 90vh; overflow-y: auto; }
+  .modal { background: var(--card); border-radius: var(--radius); padding: 24px; width: 500px; max-height: 90vh; overflow-y: auto; }
   .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 18px; }
 
-  /* === PROGRESS === */
-  .progress-steps { display: flex; align-items: center; gap: 0; margin: 12px 0; }
-  .step-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
-  .step-circle { width: 28px; height: 28px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 500; border: 2px solid var(--border); }
-  .step-circle.done { background: var(--blue); color: white; border-color: var(--blue); }
-  .step-circle.active { background: var(--amber); color: white; border-color: var(--amber); }
-  .step-circle.pending { background: var(--bg); color: var(--muted); }
-  .step-line { flex: 1; height: 2px; background: var(--border); margin-bottom: 16px; }
-  .step-line.done { background: var(--blue); }
-  .step-name { font-size: 9px; color: var(--muted); text-align: center; margin-top: 4px; max-width: 55px; line-height: 1.3; }
-
-  /* === NOTIFICATION === */
-  .notif { padding: 10px 14px; border-radius: 8px; font-size: 12px;
-    margin-bottom: 8px; border-left: 3px solid; }
-  .notif-warn { background: #FAEEDA; border-color: var(--amber); color: #854F0B; }
-  .notif-info { background: #E6F1FB; border-color: var(--blue); color: #185FA5; }
-  .notif-done { background: #EAF3DE; border-color: var(--green); color: #3B6D11; }
-  .notif-over { background: #FCEBEB; border-color: var(--red); color: #A32D2D; }
-
-  select.status-select { font-size: 12px; padding: 3px 6px;
-    border-radius: 8px; border: 0.5px solid var(--border);
-    background: var(--card); color: var(--text); cursor: pointer; }
+  select.status-select { font-size: 12px; padding: 3px 6px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
 
   @media (max-width: 768px) {
     .stats { grid-template-columns: repeat(3, 1fr); }
@@ -115,7 +67,6 @@
 </head>
 <body>
 
-<!-- ===== LOGIN ===== -->
 <div id="login-page">
   <div class="login-card">
     <h2>🔧 ระบบติดตามเครื่องมือแพทย์</h2>
@@ -129,13 +80,10 @@
     </div>
     <p id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></p>
     <button class="btn btn-primary" onclick="login()">เข้าสู่ระบบ</button>
-    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">
-      ทดสอบ: tech/1234 (ช่าง)
-    </p>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">ทดสอบ: tech/1234 (ช่าง)</p>
   </div>
 </div>
 
-<!-- ===== MAIN ===== -->
 <div id="main-page">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px">
@@ -148,10 +96,8 @@
     </div>
   </div>
 
-  <!-- ช่าง View -->
   <div id="tech-view" style="display:none">
     <div class="content">
-      <!-- Stats -->
       <div class="stats">
         <div class="stat"><div class="stat-num" id="cnt-receive" style="color:var(--blue)">0</div><div class="stat-label">รับเครื่อง</div></div>
         <div class="stat"><div class="stat-num" id="cnt-maint" style="color:var(--amber)">0</div><div class="stat-label">บำรุงรักษา</div></div>
@@ -160,10 +106,8 @@
         <div class="stat"><div class="stat-num" id="cnt-done" style="color:var(--green)">0</div><div class="stat-label">เสร็จสิ้น</div></div>
       </div>
 
-      <!-- Toolbar -->
       <div class="toolbar">
-        <input class="search" id="search-input" placeholder="ค้นหา รหัส MES, ชื่อเครื่อง, หน่วยงาน..."
-          oninput="renderTable()" />
+        <input class="search" id="search-input" placeholder="ค้นหา รหัส MES, ชื่อเครื่อง, หน่วยงาน..." oninput="renderTable()" />
         <select class="btn" id="filter-status" onchange="renderTable()">
           <option value="">ทุกสถานะ</option>
           <option>รับเครื่อง</option>
@@ -174,9 +118,9 @@
         </select>
         <button class="btn btn-primary" onclick="openAddModal()">+ เพิ่มรายการ</button>
         <button class="btn" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn" onclick="openCleanupModal()" style="border-color:var(--red);color:var(--red)">🗑 จัดการข้อมูล</button>
       </div>
 
-      <!-- Table -->
       <div class="table-card">
         <table>
           <thead>
@@ -197,6 +141,7 @@
       </div>
     </div>
   </div>
+</div>
 
 <!-- Modal: เพิ่ม/แก้ไข -->
 <div class="modal-overlay" id="add-modal">
@@ -266,20 +211,53 @@
   </div>
 </div>
 
+<!-- Modal: จัดการข้อมูล -->
+<div class="modal-overlay" id="cleanup-modal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3>🗑 จัดการข้อมูลในระบบ</h3>
+      <button class="btn" onclick="closeModal('cleanup-modal')">✕</button>
+    </div>
+
+    <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>รายการทั้งหมด<br><strong id="cm-total" style="font-size:20px">0</strong> รายการ</div>
+      <div>รายการเสร็จสิ้น<br><strong id="cm-done" style="font-size:20px;color:var(--green)">0</strong> รายการ</div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label>เลือกลบรายการ "เสร็จสิ้น" ที่เก่ากว่า</label>
+      <select id="cleanup-range" onchange="updateCleanupCount()" style="width:100%;padding:8px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);margin-top:5px">
+        <option value="0">ทั้งหมด (ทุกรายการเสร็จสิ้น)</option>
+        <option value="30">เก่ากว่า 1 เดือน</option>
+        <option value="90">เก่ากว่า 3 เดือน</option>
+        <option value="180">เก่ากว่า 6 เดือน</option>
+        <option value="365">เก่ากว่า 1 ปี</option>
+      </select>
+    </div>
+
+    <div style="background:#FAEEDA;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#854F0B">
+      พบรายการที่ตรงเงื่อนไข: <strong id="cleanup-count">0</strong> รายการ
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-primary" onclick="exportSelectedData()">⬇ Export รายการที่เลือกเป็น CSV</button>
+      <button class="btn" id="cleanup-delete-btn" style="border-color:var(--red);color:var(--red)" onclick="confirmCleanup()">🗑 ลบรายการที่เลือกออกจากระบบ</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:12px">
+      ⚠️ การลบไม่สามารถกู้คืนได้ กรุณา Export เก็บไว้ก่อนลบทุกครั้ง
+    </p>
+  </div>
+</div>
+
 <script>
-// ======================================================
-// CONFIG — ใส่ค่า Supabase ของคุณที่นี่
-// ======================================================
 const SUPABASE_URL = 'https://kvuaorlyewmfwlydcazv.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dWFvcmx5ZXdtZndseWRjYXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNzEyNjEsImV4cCI6MjA5NjY0NzI2MX0.AsAQsfiqgxcAR5YSgHEtStLK2Uh587rhrRUozIyDHjg'
-// ======================================================
 
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// Demo users (ในระบบจริงดึงจาก DB + hash password)
 const DEMO_USERS = {
-  'tech': { password: '1234', role: 'technician', name: 'นายสมชาย กิจดี', dept: null },
+  'tech': { password: '1234', role: 'technician', name: 'นายสมชาย กิจดี', dept: null }
 }
 
 let currentUser = null
@@ -287,7 +265,6 @@ let allEquipment = []
 let editingId = null
 
 const STATUSES = ['รับเครื่อง','ดำเนินการบำรุงรักษา','ดำเนินการสอบเทียบ','รอรับคืน','เสร็จสิ้น']
-const STATUS_SHORT = ['รับเครื่อง','บำรุงรักษา','สอบเทียบ','รอรับคืน','เสร็จสิ้น']
 const STATUS_BADGE = { 'รับเครื่อง':'s-รับเครื่อง','ดำเนินการบำรุงรักษา':'s-บำรุงรักษา','ดำเนินการสอบเทียบ':'s-สอบเทียบ','รอรับคืน':'s-รอรับคืน','เสร็จสิ้น':'s-เสร็จสิ้น' }
 const PRIORITY_COLOR = { 'ปกติ':'#639922','ปานกลาง':'#EF9F27','สูง':'#E24B4A','เร่งด่วน':'#A32D2D' }
 
@@ -304,18 +281,11 @@ async function login() {
   currentUser = { username: u, ...user }
   document.getElementById('login-page').style.display = 'none'
   document.getElementById('main-page').style.display = 'block'
-  document.getElementById('user-info').textContent = `${user.name} (${user.role === 'technician' ? 'ช่าง' : 'พยาบาล'})`
-
+  document.getElementById('user-info').textContent = `${user.name} (ช่าง)`
   await loadEquipment()
-
-  if (user.role === 'technician') {
-    document.getElementById('tech-view').style.display = 'block'
-  } else {
-    // nurse ไม่มีสิทธิ์เข้าหน้านี้ ให้ไปหน้า status แทน
-    window.location.href = 'status.html'
-  }
+  document.getElementById('tech-view').style.display = 'block'
 }
-  
+
 function logout() {
   currentUser = null
   allEquipment = []
@@ -324,99 +294,69 @@ function logout() {
   document.getElementById('tech-view').style.display = 'none'
   document.getElementById('username').value = ''
   document.getElementById('password').value = ''
+  document.getElementById('login-error').style.display = 'none'
 }
 
 // ===== DATA =====
 async function loadEquipment() {
-  // ถ้ายังไม่ได้ตั้งค่า Supabase ใช้ demo data
-  if (SUPABASE_URL.includes('YOUR_PROJECT')) {
-    allEquipment = getDemoData()
-  } else {
-    const { data, error } = await db.from('equipment').select('*').order('created_at', { ascending: false })
-    if (!error) allEquipment = data
-  }
+  const { data, error } = await db.from('equipment').select('*').order('created_at', { ascending: false })
+  if (!error && data) allEquipment = data
   updateStats()
   renderTable()
 }
 
-function getDemoData() {
-  return [
-    { id:'1', control_number:'CTL-2024-001', device_name:'เครื่องวัด SpO2', model:'Masimo Rad-97',
-      department:'ICU ชั้น 5', status:'ดำเนินการบำรุงรักษา', priority:'สูง',
-      assigned_to:'สมชาย ก.', received_date:'2024-06-01', due_date:'2024-06-05',
-      completed_at:null, notes:'แบตเตอรี่เสื่อม' },
-    { id:'2', control_number:'CTL-2024-002', device_name:'เครื่อง EKG', model:'GE MAC 5500',
-      department:'OPD อายุรกรรม', status:'ดำเนินการสอบเทียบ', priority:'ปานกลาง',
-      assigned_to:'มาลี ข.', received_date:'2024-06-02', due_date:'2024-06-10',
-      completed_at:null, notes:'' },
-    { id:'3', control_number:'CTL-2024-003', device_name:'เครื่องวัด BP อัตโนมัติ', model:'Welch Allyn 6100',
-      department:'ICU ชั้น 5', status:'รอรับคืน', priority:'ปกติ',
-      assigned_to:'วิชัย ค.', received_date:'2024-05-28', due_date:'2024-06-07',
-      completed_at:null, notes:'ซ่อมเสร็จแล้ว' },
-    { id:'4', control_number:'CTL-2024-004', device_name:'เทอร์โมมิเตอร์ดิจิตัล', model:'Braun ThermoScan',
-      department:'ER', status:'เสร็จสิ้น', priority:'ปกติ',
-      assigned_to:'สมชาย ก.', received_date:'2024-05-25', due_date:'2024-05-31',
-      completed_at: new Date(Date.now() - 30*60*60*1000).toISOString(), notes:'เสร็จครบ' },
-  ]
-}
-
 // ===== STATS =====
 function updateStats() {
-  const counts = { 'รับเครื่อง':0, 'ดำเนินการบำรุงรักษา':0, 'ดำเนินการสอบเทียบ':0, 'รอรับคืน':0, 'เสร็จสิ้น':0 }
+  const counts = { 'รับเครื่อง':0,'ดำเนินการบำรุงรักษา':0,'ดำเนินการสอบเทียบ':0,'รอรับคืน':0,'เสร็จสิ้น':0 }
   allEquipment.forEach(e => { if (counts[e.status] !== undefined) counts[e.status]++ })
   document.getElementById('cnt-receive').textContent = counts['รับเครื่อง']
-  document.getElementById('cnt-maint').textContent = counts['ดำเนินการบำรุงรักษา']
-  document.getElementById('cnt-calib').textContent = counts['ดำเนินการสอบเทียบ']
-  document.getElementById('cnt-wait').textContent = counts['รอรับคืน']
-  document.getElementById('cnt-done').textContent = counts['เสร็จสิ้น']
+  document.getElementById('cnt-maint').textContent   = counts['ดำเนินการบำรุงรักษา']
+  document.getElementById('cnt-calib').textContent   = counts['ดำเนินการสอบเทียบ']
+  document.getElementById('cnt-wait').textContent    = counts['รอรับคืน']
+  document.getElementById('cnt-done').textContent    = counts['เสร็จสิ้น']
 }
 
 // ===== TABLE =====
+// หมายเหตุ: แสดงทุกรายการ ไม่ซ่อนหลัง 24 ชม.
+// รายการเสร็จสิ้นเกิน 24 ชม. จะจางลง (done-fade) แต่ยังแสดงอยู่
 function renderTable() {
-  const q = document.getElementById('search-input').value.toLowerCase()
+  const q  = document.getElementById('search-input').value.toLowerCase()
   const fs = document.getElementById('filter-status').value
+  const now = Date.now()
 
-const now = Date.now()
-  let rows = allEquipment.filter(e => {
-    const isExpired = e.status === 'เสร็จสิ้น' && e.completed_at &&
-      (now - new Date(e.completed_at).getTime()) > 24*60*60*1000
-    if (isExpired) return false
-
-    const match = !q || e.control_number.toLowerCase().includes(q) ||
+  const rows = allEquipment.filter(e => {
+    const matchQ = !q || e.control_number.toLowerCase().includes(q) ||
       e.device_name.toLowerCase().includes(q) || e.department.toLowerCase().includes(q)
-    const statusMatch = !fs || e.status === fs
-    return match && statusMatch
+    return matchQ && (!fs || e.status === fs)
   })
-  
-  const tbody = document.getElementById('equipment-tbody')
-  tbody.innerHTML = rows.map(e => {
+
+  document.getElementById('equipment-tbody').innerHTML = rows.map(e => {
     const isDoneFade = e.status === 'เสร็จสิ้น' && e.completed_at &&
       (now - new Date(e.completed_at).getTime()) > 24*60*60*1000
     const isOverdue = e.due_date && new Date(e.due_date) < new Date() && e.status !== 'เสร็จสิ้น'
     const dueTxt = e.due_date
       ? `<span style="color:${isOverdue?'var(--red)':'inherit'}">${e.due_date}</span>` : '-'
-    const cls = isDoneFade ? 'done-fade' : ''
-
     const badgeCls = STATUS_BADGE[e.status] || ''
 
-    const statusCell = currentUser.role === 'technician' && !isDoneFade
+    // รายการที่จางลง (เสร็จ >24ชม.) จะแสดงเป็น badge อ่านอย่างเดียว ไม่ให้เปลี่ยนสถานะ
+    const statusCell = !isDoneFade
       ? `<select class="status-select" onchange="changeStatus('${e.id}',this.value)">
           ${STATUSES.map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}
         </select>`
       : `<span class="badge ${badgeCls}">${e.status}</span>`
 
-    return `<tr class="${cls}">
+    return `<tr class="${isDoneFade?'done-fade':''}">
       <td style="font-family:monospace;font-size:11px">${e.control_number}</td>
       <td><strong style="font-weight:500">${e.device_name}</strong><br>
         <span style="font-size:11px;color:var(--muted)">${e.model||''}</span></td>
       <td>${e.department}</td>
-      <td><span style="color:${PRIORITY_COLOR[e.priority]||'var(--muted)'};font-size:12px">● ${e.priority}</span></td>
+      <td><span style="color:${PRIORITY_COLOR[e.priority]||'var(--muted)'};font-size:12px">● ${e.priority||'ปกติ'}</span></td>
       <td>${statusCell}</td>
       <td style="font-size:12px">${e.assigned_to||'-'}</td>
       <td style="font-size:12px">${e.received_date||'-'}</td>
       <td style="font-size:12px">${dueTxt}</td>
       <td>
-        ${currentUser.role==='technician'?`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="openEdit('${e.id}')">แก้ไข</button>`:''}
+        <button class="btn" style="padding:3px 8px;font-size:11px" onclick="openEdit('${e.id}')">แก้ไข</button>
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-left:3px" onclick="viewLog('${e.id}')">ประวัติ</button>
       </td>
     </tr>`
@@ -425,19 +365,15 @@ const now = Date.now()
 
 // ===== STATUS CHANGE =====
 async function changeStatus(id, newStatus) {
-  const eq = allEquipment.find(e=>e.id===id)
+  const eq = allEquipment.find(e => e.id === id)
   if (!eq) return
   const old = eq.status
+  const completed_at = newStatus === 'เสร็จสิ้น' ? new Date().toISOString() : eq.completed_at
+  const { error } = await db.from('equipment').update({ status: newStatus, completed_at }).eq('id', id)
+  if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return }
+  await db.from('status_logs').insert({ equipment_id: id, old_status: old, new_status: newStatus, changed_by: currentUser.name, note: '' })
   eq.status = newStatus
-  if (newStatus === 'เสร็จสิ้น') eq.completed_at = new Date().toISOString()
-
-  if (!SUPABASE_URL.includes('YOUR_PROJECT')) {
-    await db.from('equipment').update({ status: newStatus, completed_at: eq.completed_at }).eq('id', id)
-    await db.from('status_logs').insert({
-      equipment_id: id, old_status: old, new_status: newStatus,
-      changed_by: currentUser.name, note: ''
-    })
-  }
+  eq.completed_at = completed_at
   updateStats()
   renderTable()
 }
@@ -446,60 +382,55 @@ async function changeStatus(id, newStatus) {
 function openAddModal() {
   editingId = null
   document.getElementById('modal-title').textContent = 'เพิ่มรายการเครื่องมือ'
-  ;['f-control','f-name','f-model','f-dept','f-assigned','f-notes'].forEach(id=>document.getElementById(id).value='')
-  ;['f-received','f-due'].forEach(id=>document.getElementById(id).value='')
+  ;['f-control','f-name','f-model','f-dept','f-assigned','f-notes'].forEach(id => document.getElementById(id).value = '')
+  ;['f-received','f-due'].forEach(id => document.getElementById(id).value = '')
   document.getElementById('f-priority').value = 'ปกติ'
   document.getElementById('add-modal').classList.add('open')
 }
 
 function openEdit(id) {
-  const e = allEquipment.find(x=>x.id===id)
+  const e = allEquipment.find(x => x.id === id)
   if (!e) return
   editingId = id
   document.getElementById('modal-title').textContent = 'แก้ไขรายการ'
-  document.getElementById('f-control').value = e.control_number
-  document.getElementById('f-name').value = e.device_name
-  document.getElementById('f-model').value = e.model||''
-  document.getElementById('f-dept').value = e.department
-  document.getElementById('f-assigned').value = e.assigned_to||''
-  document.getElementById('f-received').value = e.received_date||''
-  document.getElementById('f-due').value = e.due_date||''
-  document.getElementById('f-notes').value = e.notes||''
+  document.getElementById('f-control').value  = e.control_number
+  document.getElementById('f-name').value     = e.device_name
+  document.getElementById('f-model').value    = e.model || ''
+  document.getElementById('f-dept').value     = e.department
+  document.getElementById('f-priority').value = e.priority || 'ปกติ'
+  document.getElementById('f-assigned').value = e.assigned_to || ''
+  document.getElementById('f-received').value = e.received_date || ''
+  document.getElementById('f-due').value      = e.due_date || ''
+  document.getElementById('f-notes').value    = e.notes || ''
   document.getElementById('add-modal').classList.add('open')
 }
 
- async function saveEquipment() {
+async function saveEquipment() {
   const control = document.getElementById('f-control').value.trim()
-  const name = document.getElementById('f-name').value.trim()
-  const dept = document.getElementById('f-dept').value.trim()
+  const name    = document.getElementById('f-name').value.trim()
+  const dept    = document.getElementById('f-dept').value.trim()
 
   if (!control || !name || !dept) {
-    alert('กรุณากรอกข้อมูลที่จำเป็น: Control No., ชื่อเครื่องมือ, หน่วยงาน')
+    alert('กรุณากรอกข้อมูลที่จำเป็น: รหัส MES, ชื่อเครื่องมือ, หน่วยงาน')
     return
   }
-
-if (!editingId) {
-    // แก้ไขให้ค้นหาเฉพาะเครื่องที่เลขซ้ำกัน และสถานะ "ยังไม่เสร็จสิ้น" เท่านั้น
-    const dup = allEquipment.find(e => 
-      e.control_number.toLowerCase() === control.toLowerCase() && 
-      e.status !== 'เสร็จสิ้น'
+  if (!editingId) {
+    const dup = allEquipment.find(e =>
+      e.control_number.toLowerCase() === control.toLowerCase() && e.status !== 'เสร็จสิ้น'
     )
-    if (dup) {
-      alert(`Control Number "${control}" กำลังอยู่ในระบบ (สถานะ: ${dup.status}) ยังไม่สามารถใช้ซ้ำได้`);
-      return
-    }
+    if (dup) { alert(`รหัส "${control}" กำลังอยู่ในระบบ (สถานะ: ${dup.status}) ยังไม่สามารถใช้ซ้ำได้`); return }
   }
 
   const data = {
     control_number: control,
-    device_name: name,
-    model: document.getElementById('f-model').value.trim(),
-    department: dept,
-    priority: document.getElementById('f-priority').value,
-    assigned_to: document.getElementById('f-assigned').value.trim(),
-    received_date: document.getElementById('f-received').value || null,
-    due_date: document.getElementById('f-due').value || null,
-    notes: document.getElementById('f-notes').value.trim(),
+    device_name:    name,
+    model:          document.getElementById('f-model').value.trim(),
+    department:     dept,
+    priority:       document.getElementById('f-priority').value,
+    assigned_to:    document.getElementById('f-assigned').value.trim(),
+    received_date:  document.getElementById('f-received').value || null,
+    due_date:       document.getElementById('f-due').value || null,
+    notes:          document.getElementById('f-notes').value.trim(),
   }
 
   try {
@@ -520,58 +451,103 @@ if (!editingId) {
 
 // ===== LOG =====
 async function viewLog(id) {
-  const eq = allEquipment.find(e=>e.id===id)
+  const eq = allEquipment.find(e => e.id === id)
   if (!eq) return
-
-  let logs = []
-  if (!SUPABASE_URL.includes('YOUR_PROJECT')) {
-    const { data } = await db.from('status_logs').select('*')
-      .eq('equipment_id', id).order('created_at', { ascending: false })
-    logs = data || []
-  } else {
-    logs = [
-      { new_status:'ดำเนินการบำรุงรักษา', old_status:'รับเครื่อง', changed_by:'สมชาย ก.', created_at: new Date(Date.now()-3600000).toISOString(), note:'เริ่มตรวจสอบ' },
-      { new_status:'รับเครื่อง', old_status:null, changed_by:'มาลี ข.', created_at: new Date(Date.now()-7200000).toISOString(), note:'รับมาจาก ICU' },
-    ]
-  }
-
-  const html = `<p style="font-size:13px;font-weight:500;margin-bottom:12px">${eq.control_number} — ${eq.device_name}</p>` +
-    (logs.length ? logs.map(l=>`
+  const { data } = await db.from('status_logs').select('*')
+    .eq('equipment_id', id).order('created_at', { ascending: false })
+  const logs = data || []
+  document.getElementById('log-content').innerHTML =
+    `<p style="font-size:13px;font-weight:500;margin-bottom:12px">${eq.control_number} — ${eq.device_name}</p>` +
+    (logs.length ? logs.map(l => `
       <div style="border-left:2px solid var(--blue);padding:8px 12px;margin-bottom:8px;background:var(--bg);border-radius:0 8px 8px 0">
-        <div style="font-size:12px;font-weight:500">${l.old_status?`${l.old_status} → `:''}${l.new_status}</div>
+        <div style="font-size:12px;font-weight:500">${l.old_status ? l.old_status+' → ' : ''}${l.new_status}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">
           ${l.changed_by} · ${new Date(l.created_at).toLocaleString('th-TH')}
-          ${l.note?`<br>${l.note}`:''}
+          ${l.note ? '<br>'+l.note : ''}
         </div>
-      </div>`).join('') : '<p style="color:var(--muted);font-size:13px">ยังไม่มีประวัติ</p>')
-
-  document.getElementById('log-content').innerHTML = html
+      </div>`).join('')
+    : '<p style="color:var(--muted);font-size:13px">ยังไม่มีประวัติ</p>')
   document.getElementById('log-modal').classList.add('open')
 }
 
 // ===== EXPORT =====
-function exportCSV() {
-  const headers = ['Control No.','ชื่อเครื่องมือ','รุ่น','หน่วยงาน','สถานะ','ความเร่งด่วน','ผู้รับผิดชอบ','วันที่รับ','กำหนดแล้วเสร็จ']
-  const rows = allEquipment.map(e=>
-    [e.control_number,e.device_name,e.model,e.department,e.status,e.priority,e.assigned_to,e.received_date,e.due_date]
-    .map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(',')
+function exportToCSV(records, filename) {
+  const headers = ['Control No.','ชื่อเครื่องมือ','รุ่น','หน่วยงาน','สถานะ','ความเร่งด่วน','ผู้รับผิดชอบ','วันที่รับ','กำหนดแล้วเสร็จ','วันที่เสร็จสิ้น']
+  const rows = records.map(e =>
+    [e.control_number,e.device_name,e.model,e.department,e.status,e.priority,e.assigned_to,e.received_date,e.due_date,e.completed_at]
+    .map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')
   )
-  const csv = '\ufeff'+[headers.join(','),...rows].join('\n')
+  const csv = '\ufeff' + [headers.join(','), ...rows].join('\n')
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}))
-  a.download = `equipment_${new Date().toISOString().slice(0,10)}.csv`
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  a.download = filename
   a.click()
 }
 
+function exportCSV() {
+  exportToCSV(allEquipment, `equipment_${new Date().toISOString().slice(0,10)}.csv`)
+}
+
+// ===== CLEANUP =====
+function getCleanupRecords() {
+  const days = parseInt(document.getElementById('cleanup-range')?.value || '0')
+  return allEquipment.filter(e => {
+    if (e.status !== 'เสร็จสิ้น') return false
+    if (days === 0) return true
+    if (!e.completed_at) return false
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+    return new Date(e.completed_at).getTime() < cutoff
+  })
+}
+
+function updateCleanupCount() {
+  const records = getCleanupRecords()
+  const btn = document.getElementById('cleanup-delete-btn')
+  document.getElementById('cleanup-count').textContent = records.length
+  btn.disabled = records.length === 0
+  btn.style.opacity = records.length === 0 ? 0.5 : 1
+}
+
+function openCleanupModal() {
+  const done = allEquipment.filter(e => e.status === 'เสร็จสิ้น')
+  document.getElementById('cm-total').textContent = allEquipment.length
+  document.getElementById('cm-done').textContent  = done.length
+  document.getElementById('cleanup-range').value  = '0'
+  updateCleanupCount()
+  document.getElementById('cleanup-modal').classList.add('open')
+}
+
+function exportSelectedData() {
+  const records = getCleanupRecords()
+  if (!records.length) { alert('ไม่มีรายการที่ตรงเงื่อนไข'); return }
+  exportToCSV(records, `equipment_export_${new Date().toISOString().slice(0,10)}.csv`)
+}
+
+async function confirmCleanup() {
+  const records = getCleanupRecords()
+  if (!records.length) return
+  const ok = confirm(`ยืนยันลบ ${records.length} รายการ?\n\nกรุณาตรวจสอบว่าได้ Export เก็บไว้แล้ว\nการลบนี้ไม่สามารถกู้คืนได้`)
+  if (!ok) return
+  const ids = records.map(e => e.id)
+  try {
+    const { error } = await db.from('equipment').delete().in('id', ids)
+    if (error) throw error
+    await loadEquipment()
+    closeModal('cleanup-modal')
+    alert(`ลบสำเร็จ ${ids.length} รายการ`)
+  } catch (err) {
+    alert('เกิดข้อผิดพลาด: ' + (err.message || JSON.stringify(err)))
+  }
+}
+
+// ===== UTILS =====
 function closeModal(id) { document.getElementById(id).classList.remove('open') }
 
-// Click outside modal to close
-document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{
-  if(e.target===el) el.classList.remove('open')
+document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => {
+  if (e.target === el) el.classList.remove('open')
 }))
 
-// Enter to login
-document.getElementById('password').addEventListener('keydown',e=>{ if(e.key==='Enter') login() })
+document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') login() })
 </script>
 </body>
 </html>
